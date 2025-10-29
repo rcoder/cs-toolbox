@@ -23,7 +23,29 @@ locals {
 # SSH Key
 resource "hcloud_ssh_key" "cluster_key" {
   name       = "${local.cluster_name}-key"
-  public_key = var.ssh_public_key
+  public_key = file("${var.ssh_private_key_path}.pub")
+}
+
+# Generate random second octet for ZeroTier network (10.X.0.0/16)
+resource "random_integer" "zt_subnet" {
+  min = 0
+  max = 255
+}
+
+# ZeroTier Network
+resource "zerotier_network" "cluster_network" {
+  name        = "${local.cluster_name}-zt-network"
+  description = "ZeroTier network for ${local.cluster_name} cluster"
+  private     = true
+
+  assignment_pool {
+    start = "10.${random_integer.zt_subnet.result}.0.1"
+    end   = "10.${random_integer.zt_subnet.result}.0.254"
+  }
+
+  route {
+    target = "10.${random_integer.zt_subnet.result}.0.0/24"
+  }
 }
 
 # Private Network for internal communication
@@ -127,4 +149,66 @@ resource "hcloud_server" "cluster_nodes" {
     cluster = local.cluster_name
     role    = "node"
   }
+
+  # SSH connection for provisioners
+  connection {
+    type        = "ssh"
+    user        = "root"
+    host        = self.ipv4_address
+    private_key = file(var.ssh_private_key_path)
+  }
+
+  # Install ZeroTier
+  provisioner "remote-exec" {
+    inline = [
+      "set -e",
+      "echo 'Installing ZeroTier...'",
+      "curl -s https://install.zerotier.com | bash",
+      "echo 'ZeroTier installed successfully'"
+    ]
+  }
+
+  # Wait for ZeroTier service to start and generate identity
+  provisioner "remote-exec" {
+    inline = [
+      "set -e",
+      "echo 'Waiting for ZeroTier service to start...'",
+      "sleep 5",
+      "systemctl status zerotier-one --no-pager || true",
+      "echo 'ZeroTier service is running'"
+    ]
+  }
+
+  # Join the ZeroTier network
+  provisioner "remote-exec" {
+    inline = [
+      "set -e",
+      "echo 'Joining ZeroTier network ${zerotier_network.cluster_network.id}...'",
+      "zerotier-cli join ${zerotier_network.cluster_network.id}",
+      "echo 'Join request sent to network'"
+    ]
+  }
+
+  # Output the node's ZeroTier ID to a local file for later retrieval
+  provisioner "local-exec" {
+    command = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.ssh_private_key_path} root@${self.ipv4_address} 'zerotier-cli info' | awk '{print $3}' > zt_node_${count.index}.txt"
+  }
+}
+
+# Read ZeroTier node IDs from local files
+data "local_file" "zt_node_ids" {
+  count      = var.node_count
+  filename   = "${path.module}/zt_node_${count.index}.txt"
+  depends_on = [hcloud_server.cluster_nodes]
+}
+
+# Authorize nodes on the ZeroTier network
+resource "zerotier_member" "cluster_members" {
+  count      = var.node_count
+  name       = "${local.cluster_name}-${format("%02d", count.index + 1)}"
+  member_id  = trimspace(data.local_file.zt_node_ids[count.index].content)
+  network_id = zerotier_network.cluster_network.id
+  authorized = true
+
+  depends_on = [data.local_file.zt_node_ids]
 }

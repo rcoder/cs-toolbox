@@ -7,7 +7,7 @@ description: Toolkit for creating and managing server clusters on Hetzner Cloud 
 
 ## Overview
 
-Create and manage VM clusters on Hetzner Cloud using Terraform templates optimized for hands-on testing and network experimentation. The skill provides pre-configured Terraform templates with secure networking (public + private interfaces), strict firewall rules (SSH, HTTPS, ZeroTier), and support for multiple datacenters.
+Create and manage VM clusters on Hetzner Cloud using Terraform templates optimized for hands-on testing and network experimentation. The skill provides pre-configured Terraform templates with secure networking (public + private interfaces), strict firewall rules (SSH, HTTPS, ZeroTier), automatic ZeroTier network creation and node provisioning, and support for multiple datacenters. Each cluster automatically creates its own isolated ZeroTier network with unique subnets to avoid conflicts between deployments.
 
 ## When to Use This Skill
 
@@ -17,15 +17,26 @@ Use this skill when users request:
 - Setting up infrastructure for network testing
 - Provisioning servers with specific network configurations
 - Creating cost-effective cloud infrastructure
+- Setting up ZeroTier demo environments or test networks
+- Creating isolated overlay networks for product demonstrations
 
 ## Quick Start
 
-To deploy a cluster:
+To deploy a cluster with automatic ZeroTier network setup:
 
-1. **Copy the Terraform template** from `assets/terraform-hetzner-cluster/` to the user's working directory
-2. **Get SSH public key** using `scripts/get_ssh_key.py`
-3. **Create configuration** either manually or using `scripts/deploy_cluster.sh`
-4. **Deploy** with `terraform init`, `terraform plan`, and `terraform apply`
+1. **Set required API tokens**:
+   - Hetzner Cloud API token (from https://console.hetzner.cloud/)
+   - ZeroTier Central API token (from https://my.zerotier.com/account)
+2. **Copy the Terraform template** from `assets/terraform-hetzner-cluster/` to the user's working directory
+3. **Configure SSH key path** (defaults to `~/.ssh/id_ed25519`)
+4. **Create configuration** either manually or using `scripts/deploy_cluster.sh`
+5. **Deploy** with `terraform init`, `terraform plan`, and `terraform apply`
+
+The deployment automatically:
+- Creates a ZeroTier network with unique subnet (10.X.0.0/24)
+- Installs ZeroTier on all nodes
+- Joins nodes to the network and authorizes them
+- Provides network ID and member IPs in outputs
 
 ## Core Capabilities
 
@@ -78,7 +89,51 @@ Each cluster includes:
 
 Refer to `references/network-config.md` for detailed network specifications.
 
-### 3. Deployment Methods
+### 3. ZeroTier Network Automation
+
+Each cluster deployment automatically creates and configures a ZeroTier software-defined network:
+
+**Automatic Network Creation:**
+- Creates a private ZeroTier network on ZeroTier Central
+- Assigns unique random subnet (10.X.0.0/24) to avoid conflicts between deployments
+- Configures IP assignment pool (10.X.0.1 - 10.X.0.254)
+- Sets up routing for the allocated subnet
+
+**Automatic Node Provisioning:**
+- Installs ZeroTier One client on each cluster node
+- Waits for ZeroTier service to start and generate node identity
+- Joins each node to the newly created network
+- Authorizes all nodes automatically
+- Retrieves and stores ZeroTier node IDs for reference
+
+**Network Isolation:**
+- Each cluster gets its own isolated ZeroTier network
+- Random subnet allocation prevents IP conflicts when joining multiple clusters
+- Private network mode ensures only authorized members can join
+
+**Integration Benefits:**
+- Nodes can communicate via ZeroTier IPs regardless of physical location
+- Enables multi-region cluster connectivity
+- Allows external devices to join the network for testing
+- Provides encrypted overlay network for secure communication
+
+**Example Outputs:**
+```
+zerotier_network_id     = "1c33c1ced02a5a44"
+zerotier_network_subnet = "10.147.0.0/24"
+zerotier_node_ids = {
+  "happy-turtle-01" = "a1b2c3d4e5"
+  "happy-turtle-02" = "f6g7h8i9j0"
+  "happy-turtle-03" = "k1l2m3n4o5"
+}
+zerotier_member_ips = {
+  "happy-turtle-01" = ["10.147.0.1"]
+  "happy-turtle-02" = ["10.147.0.2"]
+  "happy-turtle-03" = ["10.147.0.3"]
+}
+```
+
+### 4. Deployment Methods
 
 **Method A: Using the Helper Script (Recommended)**
 
@@ -89,8 +144,12 @@ The `scripts/deploy_cluster.sh` script automates the entire deployment process:
 cp scripts/deploy_cluster.sh .
 chmod +x deploy_cluster.sh
 
-# Set Hetzner API token
-export HCLOUD_TOKEN='your-token-here'
+# Set required API tokens
+export HCLOUD_TOKEN='your-hetzner-api-token'
+export ZEROTIER_API_TOKEN='your-zerotier-api-token'
+
+# Optional: Set SSH key path (defaults to ~/.ssh/id_ed25519)
+export SSH_KEY_PATH="$HOME/.ssh/id_ed25519"
 
 # Deploy with defaults (3 nodes, ccx13, hillsboro)
 ./deploy_cluster.sh my-cluster
@@ -100,12 +159,13 @@ export HCLOUD_TOKEN='your-token-here'
 ```
 
 The script will:
-1. Find SSH public key automatically
-2. Generate `terraform.tfvars`
-3. Initialize Terraform
-4. Show plan and prompt for confirmation
-5. Deploy cluster
-6. Display connection information
+1. Verify API tokens are set
+2. Verify SSH key pair exists
+3. Generate `terraform.tfvars` with all configuration
+4. Initialize Terraform
+5. Show plan and prompt for confirmation
+6. Deploy cluster with ZeroTier network
+7. Display connection and ZeroTier network information
 
 **Method B: Manual Deployment**
 
@@ -116,36 +176,34 @@ For more control or customization:
    cp -r assets/terraform-hetzner-cluster/* ./
    ```
 
-2. **Find SSH public key:**
-   ```bash
-   python3 scripts/get_ssh_key.py
-   ```
-
-3. **Create terraform.tfvars:**
+2. **Create terraform.tfvars:**
    ```hcl
-   hcloud_token   = "your-hetzner-api-token"
-   cluster_name   = "test-cluster"
-   node_count     = 3
-   server_type    = "ccx13"
-   datacenter     = "hillsboro"
-   ssh_public_key = "ssh-ed25519 AAAAC3... user@host"
+   hcloud_token         = "your-hetzner-api-token"
+   zerotier_api_token   = "your-zerotier-api-token"
+   cluster_name         = ""  # Leave empty for random name
+   node_count           = 3
+   server_type          = "ccx13"
+   datacenter           = "hillsboro"
+   ssh_private_key_path = "~/.ssh/id_ed25519"
    ```
 
-4. **Deploy:**
+3. **Deploy:**
    ```bash
    terraform init
    terraform plan
    terraform apply
    ```
 
-5. **View outputs:**
+4. **View outputs including ZeroTier network info:**
    ```bash
    terraform output
+   terraform output zerotier_network_id
+   terraform output zerotier_member_ips
    ```
 
-### 4. Accessing Cluster Nodes
+### 5. Accessing Cluster Nodes
 
-After deployment, Terraform outputs provide connection details:
+After deployment, Terraform outputs provide connection details for both direct SSH and ZeroTier access:
 
 **View all outputs:**
 ```bash
@@ -169,11 +227,32 @@ ssh root@<public-ip-3>
 # Public IPs
 terraform output public_ips
 
-# Private IPs
+# Private IPs (Hetzner private network)
 terraform output private_ips
+
+# ZeroTier IPs
+terraform output zerotier_member_ips
 ```
 
-### 5. Cluster Management
+**ZeroTier Network Access:**
+```bash
+# Get ZeroTier network ID
+terraform output zerotier_network_id
+
+# Get join command for other devices
+terraform output -raw zerotier_join_command
+
+# View ZeroTier node IDs
+terraform output zerotier_node_ids
+```
+
+**Example: SSH via ZeroTier IP:**
+```bash
+# After nodes are authorized and have ZeroTier IPs
+ssh root@10.147.0.1  # Replace with actual ZeroTier IP from output
+```
+
+### 6. Cluster Management
 
 **View cluster status:**
 ```bash
@@ -190,19 +269,28 @@ terraform show
 terraform destroy
 ```
 
-**Note:** Always destroy test clusters when done to avoid unnecessary costs.
+**Note:**
+- Always destroy test clusters when done to avoid unnecessary costs
+- Destroying the cluster also deletes the ZeroTier network and removes all members
+- ZeroTier node IDs are permanently removed from ZeroTier Central
 
 ## Common Workflows
 
-### Workflow 1: Create a Basic Test Cluster
+### Workflow 1: Create a Basic Test Cluster with ZeroTier
 
-User request: *"Create a 3-node test cluster on Hetzner"*
+User request: *"Create a 3-node test cluster on Hetzner with ZeroTier networking"*
 
 1. Copy Terraform templates to current directory
-2. Run `scripts/get_ssh_key.py` to get SSH public key
+2. Set environment variables for API tokens:
+   - `export HCLOUD_TOKEN='your-token'`
+   - `export ZEROTIER_API_TOKEN='your-token'`
 3. Use `scripts/deploy_cluster.sh` with defaults or create `terraform.tfvars` manually
 4. Deploy with `terraform apply`
-5. Provide SSH commands from outputs
+5. Provide outputs including:
+   - SSH commands for direct access
+   - ZeroTier network ID
+   - ZeroTier member IPs
+   - Join command for additional devices
 
 ### Workflow 2: Create a Multi-Region Cluster
 
@@ -228,16 +316,24 @@ User request: *"I need a 5-node cluster with more powerful servers for performan
    ```
 3. Deploy and provide connection details
 
-### Workflow 4: Cluster with ZeroTier Setup
+### Workflow 4: Join External Device to Cluster ZeroTier Network
 
-User request: *"Create a cluster that I can connect to via ZeroTier"*
+User request: *"I want to join my laptop to the cluster's ZeroTier network for testing"*
 
 1. Deploy cluster using standard workflow
-2. Note that port 9993/UDP is already open in firewall
-3. After deployment, provide instructions to:
-   - Install ZeroTier on each node: `curl -s https://install.zerotier.com | sudo bash`
-   - Join ZeroTier network: `zerotier-cli join <network-id>`
-4. User can then access nodes via ZeroTier IPs
+2. Get ZeroTier network ID from outputs:
+   ```bash
+   terraform output -raw zerotier_network_id
+   ```
+3. On the external device (laptop, workstation, etc.):
+   - Install ZeroTier: `curl -s https://install.zerotier.com | bash`
+   - Join the network: `zerotier-cli join <network-id>`
+4. Authorize the new member on ZeroTier Central:
+   - Go to https://my.zerotier.com
+   - Find the network
+   - Authorize the new member
+5. User can now access cluster nodes via their ZeroTier IPs
+6. Test connectivity: `ping 10.X.0.1` (use actual ZeroTier IP from outputs)
 
 ## Reference Material
 
@@ -254,18 +350,39 @@ Load these references when users need detailed information about:
 
 ## Troubleshooting
 
-**SSH key not found:**
-- Ensure `~/.ssh/id_ed25519.pub` or `~/.ssh/id_rsa.pub` exists
-- Generate new key: `ssh-keygen -t ed25519 -C "user@example.com"`
+**SSH key pair not found:**
+- Ensure both `~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub` exist
+- Generate new key pair: `ssh-keygen -t ed25519 -C "user@example.com"`
+- Or set custom path: `export SSH_KEY_PATH="/path/to/key"`
 
 **HCLOUD_TOKEN not set:**
 - Get token from https://console.hetzner.cloud/
 - Export as environment variable: `export HCLOUD_TOKEN='your-token'`
 
+**ZEROTIER_API_TOKEN not set:**
+- Get token from https://my.zerotier.com/account
+- Export as environment variable: `export ZEROTIER_API_TOKEN='your-token'`
+- Ensure token has permission to create networks
+
+**ZeroTier installation fails:**
+- Check internet connectivity from Hetzner servers
+- Verify firewall allows outbound HTTPS (443)
+- Check ZeroTier install script is accessible: `curl -I https://install.zerotier.com`
+
+**ZeroTier nodes not joining network:**
+- Wait 30-60 seconds for service to fully start
+- Check ZeroTier service status: `ssh root@<ip> 'systemctl status zerotier-one'`
+- Verify node joined: `ssh root@<ip> 'zerotier-cli listnetworks'`
+
+**ZeroTier members not authorized:**
+- Terraform should auto-authorize, but check ZeroTier Central
+- Go to https://my.zerotier.com and verify members are authorized
+- Check terraform state: `terraform show | grep zerotier_member`
+
 **Terraform errors:**
 - Ensure Terraform >= 1.0 is installed
 - Run `terraform init` in the correct directory
-- Check API token has appropriate permissions
+- Check both API tokens have appropriate permissions
 
 **Invalid datacenter/location:**
 - Use only supported datacenters: hillsboro, singapore, germany
@@ -275,20 +392,26 @@ Load these references when users need detailed information about:
 - Private networks must be in the same network zone
 - Don't mix servers from different zones in one cluster
 
+**Provisioner connection failures:**
+- Ensure SSH private key path is correct
+- Check SSH private key has proper permissions (chmod 600)
+- Verify public key was uploaded to Hetzner
+- Wait a few seconds after server creation before provisioning
+
 ## Resources
 
 ### scripts/
-- `get_ssh_key.py`: Finds and returns SSH public key from ~/.ssh/ (prioritizes Ed25519)
-- `deploy_cluster.sh`: Complete deployment automation script with interactive prompts
+- `get_ssh_key.py`: Finds and returns SSH public key from ~/.ssh/ (legacy, now optional)
+- `deploy_cluster.sh`: Complete deployment automation script with ZeroTier integration, API token verification, and interactive prompts
 
 ### references/
 - `hetzner-specs.md`: Server specifications, datacenter locations, and pricing
-- `network-config.md`: Network architecture, firewall rules, and connectivity details
+- `network-config.md`: Network architecture, firewall rules, and ZeroTier connectivity details
 
 ### assets/
 - `terraform-hetzner-cluster/`: Complete Terraform templates ready for deployment
-  - `main.tf`: Core infrastructure (servers, networks, firewalls)
-  - `variables.tf`: Input variables with validation and defaults
-  - `outputs.tf`: Connection information and cluster details
-  - `versions.tf`: Terraform and provider version requirements
-  - `terraform.tfvars.example`: Example configuration file
+  - `main.tf`: Core infrastructure (servers, networks, firewalls, ZeroTier network, provisioners)
+  - `variables.tf`: Input variables with validation and defaults (includes ZeroTier API token)
+  - `outputs.tf`: Connection information, cluster details, and ZeroTier network info
+  - `versions.tf`: Terraform and provider version requirements (Hetzner, Random, ZeroTier)
+  - `terraform.tfvars.example`: Example configuration file with all required variables

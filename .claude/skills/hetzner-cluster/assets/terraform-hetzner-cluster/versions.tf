@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.6"
     }
+    zerotier = {
+      source  = "zerotier/zerotier"
+      version = "~> 1.4"
+    }
   }
 }
 
@@ -18,3 +22,7 @@ provider "hcloud" {
 }
 
 provider "random" {}
+
+provider "zerotier" {
+  zerotier_central_token = var.zerotier_api_token
+}

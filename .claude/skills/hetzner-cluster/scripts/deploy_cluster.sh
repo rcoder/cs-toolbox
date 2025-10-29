@@ -51,28 +51,41 @@ if [ -z "${HCLOUD_TOKEN}" ]; then
     exit 1
 fi
 
-# Find SSH public key
-echo -e "${YELLOW}Finding SSH public key...${NC}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SSH_KEY=$(python3 "${SCRIPT_DIR}/get_ssh_key.py")
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Failed to find SSH public key${NC}"
+# Check if ZeroTier API token is set
+if [ -z "${ZEROTIER_API_TOKEN}" ]; then
+    echo -e "${RED}Error: ZEROTIER_API_TOKEN environment variable is not set${NC}"
+    echo "Please set your ZeroTier Central API token:"
+    echo "  export ZEROTIER_API_TOKEN='your-token-here'"
+    echo "Get your token from: https://my.zerotier.com/account"
     exit 1
 fi
 
-echo -e "${GREEN}✓ Found SSH key${NC}"
+# Determine SSH key path
+SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/id_ed25519}"
+if [ ! -f "${SSH_KEY_PATH}" ]; then
+    echo -e "${RED}Error: SSH private key not found at ${SSH_KEY_PATH}${NC}"
+    echo "Please set SSH_KEY_PATH environment variable or ensure key exists at ~/.ssh/id_ed25519"
+    exit 1
+fi
+
+if [ ! -f "${SSH_KEY_PATH}.pub" ]; then
+    echo -e "${RED}Error: SSH public key not found at ${SSH_KEY_PATH}.pub${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ Found SSH key pair at ${SSH_KEY_PATH}${NC}"
 echo ""
 
 # Create terraform.tfvars
 echo -e "${YELLOW}Creating terraform.tfvars...${NC}"
 cat > terraform.tfvars <<EOF
-hcloud_token   = "${HCLOUD_TOKEN}"
-cluster_name   = "${CLUSTER_NAME}"
-node_count     = ${NODE_COUNT}
-server_type    = "${SERVER_TYPE}"
-datacenter     = "${DATACENTER}"
-ssh_public_key = "${SSH_KEY}"
+hcloud_token         = "${HCLOUD_TOKEN}"
+zerotier_api_token   = "${ZEROTIER_API_TOKEN}"
+cluster_name         = "${CLUSTER_NAME}"
+node_count           = ${NODE_COUNT}
+server_type          = "${SERVER_TYPE}"
+datacenter           = "${DATACENTER}"
+ssh_private_key_path = "${SSH_KEY_PATH}"
 EOF
 
 echo -e "${GREEN}✓ Created terraform.tfvars${NC}"
@@ -119,6 +132,13 @@ echo "  terraform output"
 echo ""
 echo "To SSH into nodes:"
 echo "  terraform output -json ssh_commands | jq -r '.[]'"
+echo ""
+echo "ZeroTier network information:"
+echo "  terraform output zerotier_network_id"
+echo "  terraform output zerotier_member_ips"
+echo ""
+echo "To join this network from another device:"
+echo "  terraform output -raw zerotier_join_command"
 echo ""
 echo "To destroy the cluster:"
 echo "  terraform destroy"

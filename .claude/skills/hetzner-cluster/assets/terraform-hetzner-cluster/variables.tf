@@ -4,6 +4,12 @@ variable "hcloud_token" {
   sensitive   = true
 }
 
+variable "zerotier_api_token" {
+  description = "ZeroTier Central API token (get from my.zerotier.com)"
+  type        = string
+  sensitive   = true
+}
+
 variable "cluster_name" {
   description = "Optional prefix for cluster name (will be combined with random pet name, e.g., 'myapp-happy-turtle'). Leave empty for just the random name."
   type        = string
@@ -49,9 +55,10 @@ variable "location" {
   default     = ""
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key content for server access"
+variable "ssh_private_key_path" {
+  description = "Path to SSH private key for server access and provisioning (public key will be read from <path>.pub)"
   type        = string
+  default     = "~/.ssh/id_ed25519"
 }
 
 variable "image" {

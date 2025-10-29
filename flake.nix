@@ -2,13 +2,22 @@
   outputs = { nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
       in {
         devShells.default = with pkgs; mkShell {
-          package = [
-            just
+          packages = [
+            bash
+            python3
             opentofu
+            claude-code
           ];
+
+          shellHook = ''
+            alias tf=tofu
+          '';
         };
       });
 }

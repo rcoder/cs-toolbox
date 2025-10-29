@@ -56,3 +56,34 @@ output "firewall_id" {
   description = "ID of the firewall"
   value       = hcloud_firewall.cluster_firewall.id
 }
+
+output "zerotier_network_id" {
+  description = "ZeroTier network ID"
+  value       = zerotier_network.cluster_network.id
+}
+
+output "zerotier_network_subnet" {
+  description = "ZeroTier network subnet"
+  value       = "10.${random_integer.zt_subnet.result}.0.0/24"
+}
+
+output "zerotier_node_ids" {
+  description = "ZeroTier node IDs for each cluster member"
+  value = {
+    for idx, member in zerotier_member.cluster_members :
+    member.name => member.member_id
+  }
+}
+
+output "zerotier_member_ips" {
+  description = "ZeroTier IP addresses assigned to each cluster member"
+  value = {
+    for idx, member in zerotier_member.cluster_members :
+    member.name => member.ip_assignments
+  }
+}
+
+output "zerotier_join_command" {
+  description = "Command to join this ZeroTier network from another device"
+  value       = "zerotier-cli join ${zerotier_network.cluster_network.id}"
+}

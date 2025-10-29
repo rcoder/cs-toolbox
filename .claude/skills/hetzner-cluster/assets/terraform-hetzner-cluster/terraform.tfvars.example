@@ -2,6 +2,10 @@
 # Get your token from: https://console.hetzner.cloud/
 hcloud_token = "your-hetzner-api-token-here"
 
+# ZeroTier Central API Token
+# Get your token from: https://my.zerotier.com/account
+zerotier_api_token = "your-zerotier-api-token-here"
+
 # Cluster configuration
 # cluster_name is optional - a random pet name will be generated automatically
 # If provided, it will be used as a prefix: "myapp-happy-turtle"
@@ -15,8 +19,8 @@ server_type = "ccx13"
 # Datacenter: hillsboro (US West), singapore (Asia Pacific), germany (EU Central)
 datacenter = "hillsboro"
 
-# SSH public key (copy from ~/.ssh/id_ed25519.pub or ~/.ssh/id_rsa.pub)
-ssh_public_key = "ssh-ed25519 AAAAC3... your-email@example.com"
+# SSH private key path (public key will be read from <path>.pub)
+ssh_private_key_path = "~/.ssh/id_ed25519"
 
 # OS image (default: Ubuntu 24.04 LTS)
 # image = "ubuntu-24.04"
