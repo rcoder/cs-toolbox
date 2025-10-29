@@ -27,3 +27,6 @@ override.tf.json
 # CLI configuration files
 .terraformrc
 terraform.rc
+
+# Environment files (may contain secrets)
+.envrc

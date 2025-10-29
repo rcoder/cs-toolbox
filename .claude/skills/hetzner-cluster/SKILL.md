@@ -24,10 +24,15 @@ Use this skill when users request:
 
 To deploy a cluster with automatic ZeroTier network setup:
 
-1. **Create a cluster directory**: `mkdir -p clusters/<cluster-name>` (e.g., `clusters/demo-cluster`)
-2. **Set required API tokens**:
-   - Hetzner Cloud API token (from https://console.hetzner.cloud/)
-   - ZeroTier Central API token (from https://my.zerotier.com/account)
+1. **Set up environment variables**: Copy `envrc.example` to `.envrc` and add your API tokens:
+   ```bash
+   cp envrc.example .envrc
+   # Edit .envrc with your tokens:
+   # - Hetzner Cloud API token (from https://console.hetzner.cloud/)
+   # - ZeroTier Central API token (from https://my.zerotier.com/account)
+   direnv allow  # Load the environment variables
+   ```
+2. **Create a cluster directory**: `mkdir -p clusters/<cluster-name>` (e.g., `clusters/demo-cluster`)
 3. **Copy the Terraform template** from `assets/terraform-hetzner-cluster/` to the cluster directory
 4. **Configure SSH key path** (defaults to `~/.ssh/id_ed25519`)
 5. **Create configuration** either manually or using `scripts/deploy_cluster.sh`
@@ -285,11 +290,9 @@ terraform destroy
 
 User request: *"Create a 3-node test cluster on Hetzner with ZeroTier networking"*
 
-1. Create cluster directory: `mkdir -p clusters/demo-cluster`
-2. Copy Terraform templates to cluster directory
-3. Set environment variables for API tokens:
-   - `export HCLOUD_TOKEN='your-token'`
-   - `export ZEROTIER_API_TOKEN='your-token'`
+1. Set up environment: Copy `envrc.example` to `.envrc` and add API tokens
+2. Create cluster directory: `mkdir -p clusters/demo-cluster`
+3. Copy Terraform templates to cluster directory
 4. Use `scripts/deploy_cluster.sh` with defaults or create `terraform.tfvars` manually
 5. Deploy with `terraform apply`
 6. Provide outputs including:

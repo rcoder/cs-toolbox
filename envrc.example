@@ -1,0 +1,2 @@
+export HCLOUD_TOKEN="your-hetzner-cloud-api-token-here"
+export ZEROTIER_API_TOKEN="your-zerotier-central-api-token-here"
