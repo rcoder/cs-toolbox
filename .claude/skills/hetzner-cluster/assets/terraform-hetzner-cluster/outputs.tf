@@ -30,7 +30,7 @@ output "private_ips" {
   description = "Private IP addresses of cluster nodes"
   value = {
     for server in hcloud_server.cluster_nodes :
-    server.name => server.network[0].ip
+    server.name => one(server.network).ip
   }
 }
 

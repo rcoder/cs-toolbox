@@ -11,9 +11,9 @@ locals {
 
   # Map friendly datacenter names to Hetzner location codes
   location_map = {
-    hillsboro  = "hil-dc1"   # Hillsboro, OR, USA
-    singapore  = "sin-dc1"   # Singapore
-    germany    = "fsn1-dc14" # Falkenstein, Germany
+    hillsboro  = "hil"   # Hillsboro, OR, USA
+    singapore  = "sin"   # Singapore
+    germany    = "fsn1"  # Falkenstein, Germany
   }
 
   # Use explicit location if provided, otherwise derive from datacenter

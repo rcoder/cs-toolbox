@@ -1,23 +1,32 @@
 {
-  outputs = { nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    { nixpkgs, flake-utils, ... }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
         };
-      in {
-        devShells.default = with pkgs; mkShell {
-          packages = [
-            bash
-            python3
-            opentofu
-            claude-code
-          ];
+      in
+      {
+        devShells.default =
+          with pkgs;
+          mkShell {
+            packages = [
+              bash
+              python3
+              opentofu
+              claude-code
+              jq
+              curl
+            ];
 
-          shellHook = ''
-            alias tf=tofu
-          '';
-        };
-      });
+            shellHook = ''
+              alias tf=tofu
+              direnv allow
+            '';
+          };
+      }
+    );
 }

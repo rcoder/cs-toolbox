@@ -24,13 +24,14 @@ Use this skill when users request:
 
 To deploy a cluster with automatic ZeroTier network setup:
 
-1. **Set required API tokens**:
+1. **Create a cluster directory**: `mkdir -p clusters/<cluster-name>` (e.g., `clusters/demo-cluster`)
+2. **Set required API tokens**:
    - Hetzner Cloud API token (from https://console.hetzner.cloud/)
    - ZeroTier Central API token (from https://my.zerotier.com/account)
-2. **Copy the Terraform template** from `assets/terraform-hetzner-cluster/` to the user's working directory
-3. **Configure SSH key path** (defaults to `~/.ssh/id_ed25519`)
-4. **Create configuration** either manually or using `scripts/deploy_cluster.sh`
-5. **Deploy** with `terraform init`, `terraform plan`, and `terraform apply`
+3. **Copy the Terraform template** from `assets/terraform-hetzner-cluster/` to the cluster directory
+4. **Configure SSH key path** (defaults to `~/.ssh/id_ed25519`)
+5. **Create configuration** either manually or using `scripts/deploy_cluster.sh`
+6. **Deploy** with `terraform init`, `terraform plan`, and `terraform apply`
 
 The deployment automatically:
 - Creates a ZeroTier network with unique subnet (10.X.0.0/24)
@@ -140,10 +141,6 @@ zerotier_member_ips = {
 The `scripts/deploy_cluster.sh` script automates the entire deployment process:
 
 ```bash
-# Copy script to working directory
-cp scripts/deploy_cluster.sh .
-chmod +x deploy_cluster.sh
-
 # Set required API tokens
 export HCLOUD_TOKEN='your-hetzner-api-token'
 export ZEROTIER_API_TOKEN='your-zerotier-api-token'
@@ -151,11 +148,17 @@ export ZEROTIER_API_TOKEN='your-zerotier-api-token'
 # Optional: Set SSH key path (defaults to ~/.ssh/id_ed25519)
 export SSH_KEY_PATH="$HOME/.ssh/id_ed25519"
 
-# Deploy with defaults (3 nodes, ccx13, hillsboro)
-./deploy_cluster.sh my-cluster
+# Create cluster directory and copy script
+mkdir -p clusters/my-cluster
+cd clusters/my-cluster
+cp ../../scripts/deploy_cluster.sh .
+chmod +x deploy_cluster.sh
 
-# Deploy with custom configuration
-./deploy_cluster.sh prod-cluster 5 ccx23 singapore
+# Deploy with defaults (3 nodes, ccx13, hillsboro)
+./deploy_cluster.sh
+
+# Or deploy with custom configuration
+./deploy_cluster.sh 5 ccx23 singapore
 ```
 
 The script will:
@@ -171,9 +174,11 @@ The script will:
 
 For more control or customization:
 
-1. **Copy Terraform templates:**
+1. **Create cluster directory and copy templates:**
    ```bash
-   cp -r assets/terraform-hetzner-cluster/* ./
+   mkdir -p clusters/<cluster-name>
+   cp -r assets/terraform-hetzner-cluster/* clusters/<cluster-name>/
+   cd clusters/<cluster-name>
    ```
 
 2. **Create terraform.tfvars:**
@@ -280,13 +285,14 @@ terraform destroy
 
 User request: *"Create a 3-node test cluster on Hetzner with ZeroTier networking"*
 
-1. Copy Terraform templates to current directory
-2. Set environment variables for API tokens:
+1. Create cluster directory: `mkdir -p clusters/demo-cluster`
+2. Copy Terraform templates to cluster directory
+3. Set environment variables for API tokens:
    - `export HCLOUD_TOKEN='your-token'`
    - `export ZEROTIER_API_TOKEN='your-token'`
-3. Use `scripts/deploy_cluster.sh` with defaults or create `terraform.tfvars` manually
-4. Deploy with `terraform apply`
-5. Provide outputs including:
+4. Use `scripts/deploy_cluster.sh` with defaults or create `terraform.tfvars` manually
+5. Deploy with `terraform apply`
+6. Provide outputs including:
    - SSH commands for direct access
    - ZeroTier network ID
    - ZeroTier member IPs
@@ -296,11 +302,11 @@ User request: *"Create a 3-node test cluster on Hetzner with ZeroTier networking
 
 User request: *"Set up clusters in both Singapore and Germany for latency testing"*
 
-1. Create two separate directories (e.g., `cluster-singapore/`, `cluster-germany/`)
+1. Create two separate directories (e.g., `clusters/singapore/`, `clusters/germany/`)
 2. Copy Terraform templates to each directory
 3. Configure each with appropriate datacenter:
-   - `cluster-singapore/terraform.tfvars`: `datacenter = "singapore"`
-   - `cluster-germany/terraform.tfvars`: `datacenter = "germany"`
+   - `clusters/singapore/terraform.tfvars`: `datacenter = "singapore"`
+   - `clusters/germany/terraform.tfvars`: `datacenter = "germany"`
 4. Deploy each cluster independently
 5. Provide connection details for both clusters
 
@@ -308,13 +314,14 @@ User request: *"Set up clusters in both Singapore and Germany for latency testin
 
 User request: *"I need a 5-node cluster with more powerful servers for performance testing"*
 
-1. Copy Terraform templates
-2. Configure with increased resources:
+1. Create cluster directory: `mkdir -p clusters/performance-test`
+2. Copy Terraform templates to cluster directory
+3. Configure with increased resources:
    ```hcl
    node_count  = 5
    server_type = "ccx23"  # 4 vCPU, 16GB RAM
    ```
-3. Deploy and provide connection details
+4. Deploy and provide connection details
 
 ### Workflow 4: Join External Device to Cluster ZeroTier Network
 
