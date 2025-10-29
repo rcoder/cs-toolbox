@@ -20,6 +20,7 @@
               claude-code
               jq
               curl
+              direnv
             ];
 
             shellHook = ''
