@@ -1,0 +1,26 @@
+# Hetzner Cloud API Token
+# Get your token from: https://console.hetzner.cloud/
+hcloud_token = "your-hetzner-api-token-here"
+
+# ZeroTier Central API Token
+# Get your token from: https://my.zerotier.com/account
+zerotier_api_token = "your-zerotier-api-token-here"
+
+# Cluster configuration
+# cluster_name is optional - a random pet name will be generated automatically
+# If provided, it will be used as a prefix: "myapp-happy-turtle"
+# If omitted, only the random name will be used: "happy-turtle"
+cluster_name = ""  # Leave empty for random name only, or set to "myapp" for "myapp-happy-turtle"
+node_count   = 3
+
+# Server type: ccx13 (2 vCPU, 8GB RAM), ccx23 (4 vCPU, 16GB RAM), ccx33 (8 vCPU, 32GB RAM)
+server_type = "ccx13"
+
+# Datacenter: hillsboro (US West), singapore (Asia Pacific), germany (EU Central)
+datacenter = "hillsboro"
+
+# SSH private key path (public key will be read from <path>.pub)
+ssh_private_key_path = "~/.ssh/id_ed25519"
+
+# OS image (default: Ubuntu 24.04 LTS)
+# image = "ubuntu-24.04"
