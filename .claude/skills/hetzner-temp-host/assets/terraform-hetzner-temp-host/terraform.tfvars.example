@@ -1,0 +1,94 @@
+# Hetzner Temporary Host Configuration
+# Copy this file to terraform.tfvars and fill in your values
+
+# ==============================================================================
+# REQUIRED: API Tokens
+# ==============================================================================
+
+# Hetzner Cloud API token (get from https://console.hetzner.cloud/)
+# Can also be set via environment variable: export HCLOUD_TOKEN='your-token'
+hcloud_token = "your-hetzner-api-token"
+
+# ZeroTier Central API token (get from https://my.zerotier.com/account)
+# Can also be set via environment variable: export ZEROTIER_API_TOKEN='your-token'
+# Only needed if using ZeroTier API for authorization
+zerotier_api_token = ""
+
+# ZeroTier network ID to join (16-character hex, get from https://my.zerotier.com)
+# Can also be set via environment variable: export ZEROTIER_NETWORK_ID='your-network-id'
+zerotier_network = "1c33c1ced02a5a44"
+
+# ==============================================================================
+# REQUIRED: Repository Configuration
+# ==============================================================================
+
+# GitHub repository URL (must be public or you need to configure auth)
+github_repo_url = "https://github.com/username/repository"
+
+# Git branch to checkout (defaults to main)
+github_branch = "main"
+
+# ==============================================================================
+# Host Configuration
+# ==============================================================================
+
+# Host name (leave empty for random name like "happy-turtle")
+host_name = ""
+
+# Server type: ccx13 (2 vCPU, 8GB RAM), ccx23 (4 vCPU, 16GB RAM), ccx33 (8 vCPU, 32GB RAM)
+server_type = "ccx13"
+
+# Datacenter: hillsboro (USA), singapore (Singapore), germany (Germany)
+datacenter = "hillsboro"
+
+# ==============================================================================
+# SSH Configuration
+# ==============================================================================
+
+# Path to SSH private key (public key must be at same path with .pub extension)
+ssh_private_key_path = "~/.ssh/id_ed25519"
+
+# Additional SSH public keys to add (list of key content)
+additional_ssh_keys = []
+
+# ==============================================================================
+# Docker Configuration
+# ==============================================================================
+
+# Name of Docker Compose file in repository
+docker_compose_file = "docker-compose.yml"
+
+# ==============================================================================
+# Health Check Configuration
+# ==============================================================================
+
+# Enable health checks after deployment
+health_check_enabled = true
+
+# Optional: HTTP(S) endpoint to check (e.g., "http://localhost:8080/health")
+# Leave empty to skip endpoint checks (only check containers are running)
+health_check_url = ""
+
+# ==============================================================================
+# Example Configurations
+# ==============================================================================
+
+# Example 1: Basic deployment with defaults
+# github_repo_url = "https://github.com/myuser/my-api"
+# github_branch   = "main"
+# zerotier_network = "1c33c1ced02a5a44"
+
+# Example 2: Feature branch testing
+# github_repo_url = "https://github.com/myuser/my-api"
+# github_branch   = "feature-new-endpoint"
+# host_name       = "test-feature"
+
+# Example 3: Larger server for resource-intensive app
+# github_repo_url = "https://github.com/myuser/heavy-app"
+# server_type     = "ccx23"
+# health_check_url = "http://localhost:3000/health"
+
+# Example 4: Multi-region deployment (Singapore)
+# github_repo_url = "https://github.com/myuser/api"
+# datacenter      = "singapore"
+# host_name       = "api-sg"

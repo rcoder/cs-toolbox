@@ -1,0 +1,19 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+!terraform.tfvars.example
+
+# SSH keys
+*.pem
+*.key
+id_*
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
